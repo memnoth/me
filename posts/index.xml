@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Categories on more or less insightful</title>
-    <link>https://www.ooseel.net/tech/categories/</link>
-    <description>Recent content in Categories on more or less insightful</description>
+    <title>Posts on more or less insightful</title>
+    <link>https://www.ooseel.net/tech/posts/</link>
+    <description>Recent content in Posts on more or less insightful</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
+    <lastBuildDate>Sat, 29 Aug 2020 00:01:30 +0900</lastBuildDate>
     
-	<atom:link href="https://www.ooseel.net/tech/categories/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://www.ooseel.net/tech/posts/index.xml" rel="self" type="application/rss+xml" />
     
     
     

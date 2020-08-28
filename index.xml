@@ -6,8 +6,22 @@
     <description>Recent content on more or less insightful</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
+    <lastBuildDate>Sat, 29 Aug 2020 00:01:30 +0900</lastBuildDate>
     
 	<atom:link href="https://www.ooseel.net/tech/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    
+    <item>
+      <title>Vim Pinky and Programmable Keyboard</title>
+      <link>https://www.ooseel.net/tech/2020/08/vim-pinky-and-programmable-keyboard/</link>
+      <pubDate>Sat, 29 Aug 2020 00:01:30 +0900</pubDate>
+      
+      <guid>https://www.ooseel.net/tech/2020/08/vim-pinky-and-programmable-keyboard/</guid>
+      <description>I use my left pinky to jump back and forth in vim with cscope, ctags + vim comb a lot everyday. Especially ctrl + t, o, ] and so on. However, it has been hurt slightly. I thought that it might be by the use of the pinky a lot, so that looked for a solution in Google. Firstly, I could have modified my input method program a bit such that swap between Ctrl and Caps Lock, but felt frustrated all the steps code level to testing.</description>
+    </item>
+    
+    
     
     
   </channel>
