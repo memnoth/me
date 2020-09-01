@@ -3,32 +3,32 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://www.ooseel.net/tech/</loc>
+    <loc>https://www.ooseel.net/me/</loc>
     <lastmod>2020-08-29T00:01:30+09:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://www.ooseel.net/tech/posts/</loc>
+    <loc>https://www.ooseel.net/me/posts/</loc>
     <lastmod>2020-08-29T00:01:30+09:00</lastmod>
   </url>
   
   <url>
-    <loc>https://www.ooseel.net/tech/2020/08/vim-pinky-and-programmable-keyboard/</loc>
+    <loc>https://www.ooseel.net/me/2020/08/vim-pinky-and-programmable-keyboard/</loc>
     <lastmod>2020-08-29T00:01:30+09:00</lastmod>
   </url>
   
   <url>
-    <loc>https://www.ooseel.net/tech/about/</loc>
+    <loc>https://www.ooseel.net/me/about/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://www.ooseel.net/tech/categories/</loc>
+    <loc>https://www.ooseel.net/me/categories/</loc>
   </url>
   
   <url>
-    <loc>https://www.ooseel.net/tech/tags/</loc>
+    <loc>https://www.ooseel.net/me/tags/</loc>
   </url>
   
 </urlset>
