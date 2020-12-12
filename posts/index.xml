@@ -6,9 +6,21 @@
     <description>Recent content in Posts on more or less insightful</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Sat, 29 Aug 2020 00:01:30 +0900</lastBuildDate>
+    <lastBuildDate>Sat, 12 Dec 2020 21:35:10 +0900</lastBuildDate>
     
 	<atom:link href="https://www.ooseel.net/me/posts/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    
+    <item>
+      <title>Tricky Signal Tracing in Kernel</title>
+      <link>https://www.ooseel.net/me/2020/12/tricky-signal-tracing-in-kernel/</link>
+      <pubDate>Sat, 12 Dec 2020 21:35:10 +0900</pubDate>
+      
+      <guid>https://www.ooseel.net/me/2020/12/tricky-signal-tracing-in-kernel/</guid>
+      <description>Have you ever experienced such horrible signaling between core processes which might crash a whole system. This article is about an approach let you be safe from enermies. It&amp;rsquo;d be good for both linux distros we mainly use in laptops and embedded systems. but more comfy on the latter for a test.
+Someone says &amp;ldquo;Better safe than sorry&amp;rdquo;. I like that quote. Even though software world is totally chaotic on bugs, we should at least try some approaches being safe.</description>
+    </item>
     
     
     

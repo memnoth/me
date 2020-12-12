@@ -4,13 +4,18 @@
   
   <url>
     <loc>https://www.ooseel.net/me/</loc>
-    <lastmod>2020-08-29T00:01:30+09:00</lastmod>
+    <lastmod>2020-12-12T21:35:10+09:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>https://www.ooseel.net/me/posts/</loc>
-    <lastmod>2020-08-29T00:01:30+09:00</lastmod>
+    <lastmod>2020-12-12T21:35:10+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.ooseel.net/me/2020/12/tricky-signal-tracing-in-kernel/</loc>
+    <lastmod>2020-12-12T21:35:10+09:00</lastmod>
   </url>
   
   <url>
