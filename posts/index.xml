@@ -18,8 +18,8 @@
       <pubDate>Sat, 12 Dec 2020 21:35:10 +0900</pubDate>
       
       <guid>https://www.ooseel.net/me/2020/12/tricky-signal-tracing-in-kernel/</guid>
-      <description>Have you ever experienced such horrible signaling between core processes which might crash a whole system. This article is about an approach let you be safe from enermies. It&amp;rsquo;d be good for both linux distros we mainly use in laptops and embedded systems. but more comfy on the latter for a test.
-Someone says &amp;ldquo;Better safe than sorry&amp;rdquo;. I like that quote. Even though software world is totally chaotic on bugs, we should at least try some approaches being safe.</description>
+      <description>Have you ever experienced such horrible signals between core processes which might crash a whole system? I had done. Unknown signals are a kind of critical issue in product.
+Someone says &amp;ldquo;Better safe than sorry&amp;rdquo;. I like that quote. Even though software world is totally chaotic on bugs, we should at least try some approaches being safe. Especially signals. They never log while on their way unless we trigger so that could quietly stab your back one day if you are off the guard.</description>
     </item>
     
     <item>
