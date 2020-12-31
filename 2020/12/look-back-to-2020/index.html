@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Hugo 0.69.0" />
+
+  <title> 2020년을 되돌아 보는 글 |  more or less insightful</title>
+  <meta name="description" content="more or less insightful">
+  <link rel="stylesheet" href="https://www.ooseel.net/me/css/simpleness.css">
+  <link rel="canonical" href="https://www.ooseel.net/me/2020/12/look-back-to-2020/">
+  <link rel="alternate" type="application/rss+xml" href="" title="more or less insightful">
+  
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <header class="menus">
+  
+
+  <nav >
+    
+    <a href="/me/"> more or less insightful</a>
+    
+  </nav>
+
+  <nav class="fontawesome">
+    
+    <a href="https://github.com/memnoth" target="_blank">
+        <i title="GitHub" class="fab fa-github"></i>
+    </a>
+    
+    
+    <a href="https://www.ooseel.net/me/index.xml" target="_blank">
+        <i title="RSS" class="fas fa-rss"></i>
+    </a>
+    
+  </nav>
+  
+  
+  <div class="hidden description">more or less insightful</div>
+  
+</header>
+
+<article class="article">
+  <header>
+    <h1 style="text-align: center;" >2020년을 되돌아 보는 글</h1>
+
+    <div class="post-meta">
+    
+      <time datetime="2020-12-31T07:07:07&#43;09:00">December 31, 2020</time> &nbsp; 
+    
+
+     &nbsp;
+
+    
+    
+    
+
+    
+      <i class="far fa-clock"></i>
+      
+      
+      
+
+      
+        9 min
+      
+      30 s
+      &nbsp;
+    
+
+    
+    </div>
+  </header>
+
+   
+
+  <div class="text">
+    <p>1년을 되돌아 보는 행동은 언제나 낯설고 긴장된다. 자기 반성을 위해 지난 1년간의 활동을 객관적으로 바라봐야 하는데 이 곳에 말은 못해도 가슴 쓰린 기억들을 끄집어 내야하니 말이다. 이 글은 <strong><code>나</code></strong>를 되돌아 보는 글이다.</p>
+<p>9월부터 실내암벽 등반을 다시 시작했다. 지금은 2.5단계로 인해 쉬고 있지만 1월에 그만둔 뒤로 8개월만이었다. <code>회사-집-공부</code> 패턴으로 몇 달을 지내니 스트레스가 풀리지 않아 불면증에 슬럼프까지 겹쳤는데 자존감 측면에서 확실히 운동하고 안 하고의 차이가 존재한다. 땀을 확 빼고 집에 갈 때 느끼는 밤 공기의 상쾌함, 이 느낌은 여전히 내가 살아 존재하는 느낌을 준다. 또한 사소한 문제라도 몇 개 풀었다는 사실과 암장 회원들과의 유대관계가 회사 업무로 인해 강직된 마음을 녹여준다. 모든 인연에서 배울 점이 있음을 요즘들어 많이 느끼는데 다들 착하고 자유롭고 유연한 사고를 가지고 있다. 그렇기에 그들과 함께하는 것이 즐거운지도 모르겠다.</p>
+<p>하반기에는 자기객관화를 위해 노력을 많이 했으나 여전히 혼란스럽다. 나에 대해 몇가지 알게된 사실은 꼰대화가 진행되고 있다는 것과 시간낭비가 많다는 것이다. 나와 다름을 인정하지 못할 때가 종종 있고 위로라는 명목하에 주는 강제 조언, 행동은 어른스럽지 못했고 남탓할 때도 있었다. 이러다 보니 정작 중요한 것에 집중하지 못함은 물론 나의 행동이 상대방에게 상처가 되었고 소모되는 에너지도 많았다. 내년은 부디 <strong>덜</strong> 꼰대스러웠으면 하는 바램이다.</p>
+<h1 id="개발자로서-도전과-깨달음">개발자로서 도전과 깨달음</h1>
+<p>운이 좋았다. 올해는 컨트리뷰톤을 통해 한 달간 새로운걸 경험할 수 있는 좋은 기회가 있었으니 말이다. 인메모리 캐시 서버 솔루션(<a href="https://github.com/naver/arcus-memcached">ARCUS</a>)팀에 참여하였는데 평소에도 이런 종류의 솔루션들이 데이터를 처리하는 방법에 대해 궁금하기도 했다. 해시맵이나 선형 리스트에 대한 알고리즘들 말이다. 캐싱 솔루션들은 퍼포먼스가 좋아야하니 효율적인 알고리즘을 사용하고 있어 학부에서 얕게 배운 내용들이 현장에서 사용되는 방식을 습득하기에 가장 좋은 환경이다.</p>
+<p>이번엔 참여하는 방식을 조금 달리 해봤는데 멘토님들이 주시는 과제에 대해 수동적으로 행동하기 보다 토이 프로젝트를 주도했다. <a href="https://en.wikipedia.org/wiki/Filesystem_in_Userspace">FUSE</a> 프레임워크와 ARCUS 솔루션을 조합하여 캐시 서버 메모리에 저장된 Key-Value 데이터들을 <a href="https://en.wikipedia.org/wiki/Virtual_file_system">VFS</a>(가상 파일 시스템)으로도 제공하는 프로젝트였다. 이에 대해 간략히 설명하자면 엔진에 키가 저장될 때 VFS의 캐시 리스트에도 동일한 키를 저장한다. 이 작업은 엔진과 VFS의 Key 리스트 동기화가 중요하다. 이후에 사용자가 VFS이 제공하는 파일(이름이 Key와 동일)에 대해 <code>cat</code>, <code>tree</code> 명령어를 수행하면 엔진을 통해 Value 값을 가져와 사용자에게 제공한다. 자세한 내용은 <a href="https://github.com/memnoth/arcus-memcached-rofs/tree/master-rofs/mnth">프로젝트 링크</a> 참고.</p>
+<p>회사에서 새 프로젝트를 진행하던 시기와 컨트리뷰톤이 겹쳤는데 프로젝트도 기간이 짧았고 컨트리뷰톤은 한 달 남짓이었다. 둘다 일정이 타이트해서 업무 외 남는 시간에는 평일/주말 상관없이 밤 늦게까지 엔진을 분석하고 VFS 레이어를 구현했다. 이때 너무 힘들었고 스트레스도 많이 받았지만 임계점을 한번 넘기니 이후로 중규모 프로젝트를 분석하는데 자신감이 생기기 시작했다.</p>
+<p>컨트리뷰톤 이후로 <code>JavaScript</code> 엔진인 <a href="https://jerryscript.net/">JerryScript</a> 스터디를 시작했는데 진행 경험이 거의 없었고 예전에도 한번 시도했다가 실패한 적이 있었다. 우연찮게 백기선님이 올리신 스터디 모집에 대한 영상을 보게 되었는데 <code>&quot;처음에는 누구나 서툴다. 그러나 시도하면서 피드백을 받고 보완해 가는 것이다&quot;</code>라고 말씀하신 것에 용기를 얻어 시작했다. 중간에 그만두더라도 시도 한 것이 하지 않은 것보다 낫지 않겠는가. 스터디에 참여하신 분의 실력이 좋으셔서 진도가 정말 빨리 나갔는데, 총 8주를 계획했으나 첫 주에
+이미 Lexer 파트에 대해 큰 그림을 그렸고 마지막 주에는 <a href="https://github.com/jerryscript-project/jerryscript/pull/4346">패치</a>를 반영시켰다. 2기를 진행하려다가 커널과 관련된 부분을 공부하는게 좋을 것 같아서 그만두었지만 그동안의 스터디가 시간낭비라는 생각은 들지 않는다.</p>
+<p>데이터베이스 엔진, 컴파일러 모두 내가 관심있던 분야였지만 이 글을 쓰는 시점에 깨달은 것은 두 분야에 대해 아직은 그냥 흥미만 있다는 것이다. 어쩌면 너무 이른 판단일지도 모르겠다. 하지만 한 가지 사실은 지금은 리눅스 커널이 더 재밌고 이것에 열정을 쏟고 싶다. JerryScript는 당분간 내 흥미의 한 공간에 고이 모셔두고 재미로 분석하려고 한다.</p>
+<p>회사에서는 이것저것 다양하게 경험했다. 흥미로운 이슈들을 많이 주셨고 메인 업무이기도 했는데 커널 관련된게 몇 가지 있었다. 1년차 개발자가 무엇을 알겠는가, 커널 버그 대부분이 디버깅하기 무척 어려웠는데 시간은 계속 흐르고 일정은 다가오는데 진행이 안되니 스트레스를 많이 받았다. 이때 자존감이 완전 바닥을 쳤고 <code>&quot;이 길이 내 길이 아닌가&quot;</code> 라는 생각이 들며 굉장히 심란했다. 불평해봤자 상황은 나아지지 않으니 어떻게든 해결하려고 밤새 공부하며 발버둥쳤고 다행히도 일정내에 해결했다.</p>
+<p>스트레스 받던 당시에는 몰랐지만 돌아보니 저 경험이 성장의 기폭제로 작용한 것 같다. 이후로 리눅스 커널을 바라보는 시각과 업무에 대한 태도가 달라졌으며 버그에 대한 두려움은 여전히 존재하지만 마음은 한층 더 단단해졌다.</p>
+<h1 id="마치며">마치며..</h1>
+<p>올해는 바쁘게 지냈음에도 불구하고 아쉬움이 많이 남는다. 그 아쉬움은 <code>&quot;그때 적극적으로 행동했더라면..&quot;</code> 하는 마음이리라. 내년에는 꼭 <code>&quot;2021년은 덜 꼰대스러웠네요. 다행입니다!&quot;</code> 라는 말을 할 수 있길 바라고 이 글을 읽는 분들에게는 축복이 따르길 기원한다.</p>
+<p>(배고프니 치킨 🍗 시켜야겠다)</p>
+
+  </div>
+
+  <footer>
+    <hr class="end-line">
+
+    
+
+    
+
+    
+    
+  </footer>
+
+  <div class="comments">
+
+
+
+</div>
+
+</article>
+
+
+</body>
+<div class="foot">
+  
+  
+    &copy; 2019 - 2020 &#183; 
+    Copyright © 2020 Leesoo Ahn &#183;
+    <a href="#"><i class="fas fa-chevron-up"></i></a>
+  
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-F1MPWJM02E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-F1MPWJM02E');
+</script>
+</div>
+
+
+<script src="/me/js/lazyload.min.js"></script>
+<script>
+  var lazyImage = new LazyLoad({
+    container: document.getElementById('article')
+  });
+</script>
+
+
+</html>

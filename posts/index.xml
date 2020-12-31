@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2020 Leesoo Ahn</copyright>
-    <lastBuildDate>Sat, 12 Dec 2020 21:35:10 +0900</lastBuildDate>
+    <lastBuildDate>Thu, 31 Dec 2020 07:07:07 +0900</lastBuildDate>
     
 	<atom:link href="https://www.ooseel.net/me/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>2020년을 되돌아 보는 글</title>
+      <link>https://www.ooseel.net/me/2020/12/look-back-to-2020/</link>
+      <pubDate>Thu, 31 Dec 2020 07:07:07 +0900</pubDate>
+      
+      <guid>https://www.ooseel.net/me/2020/12/look-back-to-2020/</guid>
+      <description>1년을 되돌아 보는 행동은 언제나 낯설고 긴장된다. 자기 반성을 위해 지난 1년간의 활동을 객관적으로 바라봐야 하는데 이 곳에 말은 못해도 가슴 쓰린 기억들을 끄집어 내야하니 말이다. 이 글은 나를 되돌아 보는 글이다.
+9월부터 실내암벽 등반을 다시 시작했다. 지금은 2.5단계로 인해 쉬고 있지만 1월에 그만둔 뒤로 8개월만이었다. 회사-집-공부 패턴으로 몇 달을 지내니 스트레스가 풀리지 않아 불면증에 슬럼프까지 겹쳤는데 자존감 측면에서 확실히 운동하고 안 하고의 차이가 존재한다. 땀을 확 빼고 집에 갈 때 느끼는 밤 공기의 상쾌함, 이 느낌은 여전히 내가 살아 존재하는 느낌을 준다.</description>
+    </item>
     
     <item>
       <title>Tricky Signal Tracing in Kernel</title>
