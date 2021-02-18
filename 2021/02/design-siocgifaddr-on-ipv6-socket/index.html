@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Hugo 0.69.0" />
+
+  <title> Design SIOCGIFADDR on IPv6 socket |  more or less insightful</title>
+  <meta name="description" content="more or less insightful">
+  <link rel="stylesheet" href="https://www.ooseel.net/me/css/simpleness.css">
+  <link rel="canonical" href="https://www.ooseel.net/me/2021/02/design-siocgifaddr-on-ipv6-socket/">
+  <link rel="alternate" type="application/rss+xml" href="" title="more or less insightful">
+  
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <header class="menus">
+  
+
+  <nav >
+    
+    <a href="/me/"> more or less insightful</a>
+    
+  </nav>
+
+  <nav class="fontawesome">
+    
+    <a href="https://github.com/memnoth" target="_blank">
+        <i title="GitHub" class="fab fa-github"></i>
+    </a>
+    
+    
+    <a href="https://www.ooseel.net/me/index.xml" target="_blank">
+        <i title="RSS" class="fas fa-rss"></i>
+    </a>
+    
+  </nav>
+  
+  
+  <div class="hidden description">more or less insightful</div>
+  
+</header>
+
+<article class="article">
+  <header>
+    <h1 style="text-align: center;" >Design SIOCGIFADDR on IPv6 socket</h1>
+
+    <div class="post-meta">
+    
+      <time datetime="2021-02-04T21:26:31&#43;09:00">February 04, 2021</time> &nbsp; 
+    
+
+     &nbsp;
+
+    
+    
+    
+
+    
+      <i class="far fa-clock"></i>
+      
+      
+      
+
+      
+        5 min
+      
+      12 s
+      &nbsp;
+    
+
+    
+    </div>
+  </header>
+
+   
+
+  <div class="text">
+    <p>As some of you already know <code>SIOCGIFADDR</code> isn&rsquo;t supported on IPv6 socket although <code>SIOCSIFADDR</code> is. For sure there is a reason linux kernel doesn&rsquo;t do so but it&rsquo;s worth to build up by our hands, then we get to know much more in detail. This is good for us as a studying purpose rather than use in product.</p>
+<p>We define simple ideas with some requirements, then look at kernel patch and a demo.</p>
+<h2 id="ideas">Ideas</h2>
+<p>A significant one is that an interface could have multiple IPv6 addresses, so our prototype would be the following result in user program perspective &hellip;</p>
+<ol>
+<li>Take an IPv6 address and an interface name via <strong>args</strong> to set</li>
+<li>Get and print an IPv6 address mapped to an index of the required interface via its <strong>args</strong>. Assume the index would be 0 if the args isn&rsquo;t passed.</li>
+</ol>
+<p>Assigning an address isn&rsquo;t a big deal but trying to get one is a bit complicated. Because we have to pass an <strong>index</strong> to kernel. For the requirement, use a member, <code>struct in6_addr</code> of <code>struct in6_ifreq</code> which the size of memory is 128 bits. Split the space into two parts and put the index value into the second space. We could even split it into 4 spaces of 32 bits based though, make it simple.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span>.-------------------------------------------.
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>|                 <span style="color:#ae81ff">128</span> bits                  |  &lt;-- struct in6_addr
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span><span style="color:#e6db74">&#39;-------------------------------------------&#39;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>^--------------------^ ^--------------------^
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">6</span>       <span style="color:#ae81ff">64</span> bits                 <span style="color:#ae81ff">64</span> bits
+</code></pre></div><p>We use the following struct on both kernel and user program to serialize between them. It&rsquo;s originally from kernel, but manually port to the user program. Remember <code>ifr6_addr</code> is very important.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">1</span><span style="color:#66d9ef">struct</span> in6_ifreq {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">2</span>  <span style="color:#66d9ef">struct</span> in6_addr ifr6_addr;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">3</span>  u_int32_t ifr6_prefixlen;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">4</span>  <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> ifr6_ifindex;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">5</span>};
+</code></pre></div><p>Here is a part of our test code, <code>cmd_get</code> function is the main routine implemented with <code>SIOCGIFADDR</code> but you could see the full code <a href="https://gist.github.com/memnoth/6d188b2ca0fa76d6ab6887f1e2b1c16c">here</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">cmd_get</span>(<span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>{
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>  <span style="color:#66d9ef">char</span> buf[<span style="color:#ae81ff">256</span>] <span style="color:#f92672">=</span> { <span style="color:#ae81ff">0</span>, };
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>  <span style="color:#66d9ef">struct</span> in6_ifreq req;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>  <span style="color:#66d9ef">struct</span> ifreq ifr;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>  uint64_t <span style="color:#f92672">*</span>index <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>((uint64_t<span style="color:#f92672">*</span>)<span style="color:#f92672">&amp;</span>req.ifr6_addr)[<span style="color:#ae81ff">1</span>];
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>  init_ifindex(ifr);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>  memset(<span style="color:#f92672">&amp;</span>req, <span style="color:#ae81ff">0</span>, <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">struct</span> in6_ifreq));
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>  <span style="color:#75715e">/* Set index of nth address on the interface */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>  <span style="color:#f92672">*</span>index <span style="color:#f92672">=</span> (argc <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">?</span> <span style="color:#ae81ff">0</span> <span style="color:#f92672">:</span> atoi(argv[<span style="color:#ae81ff">1</span>]);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>  req.ifr6_prefixlen <span style="color:#f92672">=</span> <span style="color:#ae81ff">64</span>;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>  req.ifr6_ifindex <span style="color:#f92672">=</span> ifr.ifr_ifindex;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>  retval_if( ioctl(fd, SIOCGIFADDR, <span style="color:#f92672">&amp;</span>req), <span style="color:#f92672">-</span><span style="color:#ae81ff">5</span> <span style="color:#75715e">/* 251 */</span>, NULL );
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>  inet_ntop(AF_INET6, <span style="color:#f92672">&amp;</span>req.ifr6_addr, buf, <span style="color:#66d9ef">sizeof</span>(buf));
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>  printf(<span style="color:#e6db74">&#34;interface (%s) addr (%s)</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, argv[<span style="color:#ae81ff">0</span>], buf);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>  <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>}
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>(<span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>argv[])
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span>{
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span>  <span style="color:#75715e">/* Skip useless code */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span>  retval_if( ((fd <span style="color:#f92672">=</span> socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)), fd <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">0</span>),
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span>             <span style="color:#f92672">-</span><span style="color:#ae81ff">2</span> <span style="color:#75715e">/* 254 */</span>, NULL );
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span>  <span style="color:#75715e">/* Skip useless code */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span>    ret <span style="color:#f92672">=</span> cmd_get(fd, argc<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>, argv<span style="color:#f92672">+</span><span style="color:#ae81ff">2</span>);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span>}
+</code></pre></div><p>As our ideas, a pointer named <code>index</code> points to the second space of <code>struct in6_addr</code> which sets on demand and assume our requirement is always with 64 bits prefix length.</p>
+<h2 id="kernel-patch">Kernel patch</h2>
+<p>Code is a bit simple. Look up and compare the index on the specified interface. See the line <strong>44</strong>, kernel knows what number of addresses a user asks by parsing the <strong>index</strong> from user buffer and compare on <strong>48</strong> line. If the number is existed, copy the address to the same buffer and return back on the line, <strong>84</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  1</span>diff <span style="color:#f92672">--</span>git a<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>addrconf.h b<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>addrconf.h
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  2</span>index ab8b3eb53d.<span style="color:#ae81ff">.97f</span><span style="color:#ae81ff">8</span>de4c09 <span style="color:#ae81ff">100644</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  3</span><span style="color:#f92672">---</span> a<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>addrconf.h
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  4</span><span style="color:#f92672">+++</span> b<span style="color:#f92672">/</span>include<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>addrconf.h
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  5</span><span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">77</span>,<span style="color:#ae81ff">6</span> <span style="color:#f92672">+</span><span style="color:#ae81ff">77</span>,<span style="color:#ae81ff">7</span> <span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#66d9ef">int</span> addrconf_init(<span style="color:#66d9ef">void</span>);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  6</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">addrconf_cleanup</span>(<span style="color:#66d9ef">void</span>);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  7</span> 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  8</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">addrconf_add_ifaddr</span>(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">  9</span><span style="color:#f92672">+</span><span style="color:#66d9ef">int</span> addrconf_get_ifaddr(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 10</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">addrconf_del_ifaddr</span>(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 11</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">addrconf_set_dstaddr</span>(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 12</span> 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 13</span>diff <span style="color:#f92672">--</span>git a<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>addrconf.c b<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>addrconf.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 14</span>index <span style="color:#ae81ff">635</span>b2482fa.<span style="color:#ae81ff">.46e9</span>a80e7a <span style="color:#ae81ff">100644</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 15</span><span style="color:#f92672">---</span> a<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>addrconf.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 16</span><span style="color:#f92672">+++</span> b<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>addrconf.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 17</span><span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">2985</span>,<span style="color:#ae81ff">6</span> <span style="color:#f92672">+</span><span style="color:#ae81ff">2985</span>,<span style="color:#ae81ff">46</span> <span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> inet6_addr_add(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">int</span> ifindex,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 18</span> 	<span style="color:#66d9ef">return</span> PTR_ERR(ifp);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 19</span> }
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 20</span> 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 21</span><span style="color:#f92672">+</span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> inet6_addr_get(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 22</span><span style="color:#f92672">+</span>                          <span style="color:#66d9ef">int</span> ifindex,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 23</span><span style="color:#f92672">+</span>                          u32 ifa_flags,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 24</span><span style="color:#f92672">+</span>                          <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> in6_addr <span style="color:#f92672">*</span>pfx,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 25</span><span style="color:#f92672">+</span>                          <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> plen)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 26</span><span style="color:#f92672">+</span>{
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 27</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">struct</span> inet6_ifaddr <span style="color:#f92672">*</span>ifp;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 28</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">struct</span> inet6_dev <span style="color:#f92672">*</span>idev;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 29</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">struct</span> net_device <span style="color:#f92672">*</span>dev;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 30</span><span style="color:#f92672">+</span>	u64 upper, lower, i <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 31</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 32</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (plen <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">128</span>)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 33</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>EINVAL;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 34</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 35</span><span style="color:#f92672">+</span>	dev <span style="color:#f92672">=</span> __dev_get_by_index(net, ifindex);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 36</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>dev)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 37</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>ENODEV;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 38</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 39</span><span style="color:#f92672">+</span>	idev <span style="color:#f92672">=</span> __in6_dev_get(dev);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 40</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>idev)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 41</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>ENXIO;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 42</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 43</span><span style="color:#f92672">+</span>	upper <span style="color:#f92672">=</span> ((u64<span style="color:#f92672">*</span>)pfx)[<span style="color:#ae81ff">0</span>];
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 44</span><span style="color:#f92672">+</span>	lower <span style="color:#f92672">=</span> ((u64<span style="color:#f92672">*</span>)pfx)[<span style="color:#ae81ff">1</span>];
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 45</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 46</span><span style="color:#f92672">+</span>	read_lock_bh(<span style="color:#f92672">&amp;</span>idev<span style="color:#f92672">-&gt;</span>lock);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 47</span><span style="color:#f92672">+</span>	list_for_each_entry(ifp, <span style="color:#f92672">&amp;</span>idev<span style="color:#f92672">-&gt;</span>addr_list, if_list) {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 48</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">if</span> (ifp<span style="color:#f92672">-&gt;</span>prefix_len <span style="color:#f92672">==</span> plen <span style="color:#f92672">&amp;&amp;</span> lower <span style="color:#f92672">==</span> i<span style="color:#f92672">++</span>) {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 49</span><span style="color:#f92672">+</span>			read_unlock_bh(<span style="color:#f92672">&amp;</span>idev<span style="color:#f92672">-&gt;</span>lock);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 50</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 51</span><span style="color:#f92672">+</span>			memcpy(pfx, <span style="color:#f92672">&amp;</span>(ifp<span style="color:#f92672">-&gt;</span>addr), <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">struct</span> in6_addr));
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 52</span><span style="color:#f92672">+</span>			<span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 53</span><span style="color:#f92672">+</span>		}
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 54</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">if</span> (i <span style="color:#f92672">&gt;</span> lower)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 55</span><span style="color:#f92672">+</span>			<span style="color:#66d9ef">break</span>;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 56</span><span style="color:#f92672">+</span>	}
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 57</span><span style="color:#f92672">+</span>	read_unlock_bh(<span style="color:#f92672">&amp;</span>idev<span style="color:#f92672">-&gt;</span>lock);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 58</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>EINVAL;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 59</span><span style="color:#f92672">+</span>}
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 60</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 61</span> <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> inet6_addr_del(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">int</span> ifindex, u32 ifa_flags,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 62</span> 			  <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">struct</span> in6_addr <span style="color:#f92672">*</span>pfx, <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> plen)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 63</span> {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 64</span><span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">3053</span>,<span style="color:#ae81ff">6</span> <span style="color:#f92672">+</span><span style="color:#ae81ff">3093</span>,<span style="color:#ae81ff">28</span> <span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#66d9ef">int</span> addrconf_add_ifaddr(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 65</span> 	<span style="color:#66d9ef">return</span> err;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 66</span> }
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 67</span> 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 68</span><span style="color:#f92672">+</span><span style="color:#66d9ef">int</span> addrconf_get_ifaddr(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 69</span><span style="color:#f92672">+</span>{
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 70</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">struct</span> in6_ifreq ireq;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 71</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">int</span> err;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 72</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 73</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>ns_capable(net<span style="color:#f92672">-&gt;</span>user_ns, CAP_NET_ADMIN))
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 74</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>EPERM;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 75</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 76</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (copy_from_user(<span style="color:#f92672">&amp;</span>ireq, arg, <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">struct</span> in6_ifreq)))
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 77</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>EFAULT;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 78</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 79</span><span style="color:#f92672">+</span>	rtnl_lock();
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 80</span><span style="color:#f92672">+</span>	err <span style="color:#f92672">=</span> inet6_addr_get(net, ireq.ifr6_ifindex, <span style="color:#ae81ff">0</span>, <span style="color:#f92672">&amp;</span>ireq.ifr6_addr,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 81</span><span style="color:#f92672">+</span>			ireq.ifr6_prefixlen);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 82</span><span style="color:#f92672">+</span>	rtnl_unlock();
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 83</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 84</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>err <span style="color:#f92672">&amp;&amp;</span> copy_to_user(arg, <span style="color:#f92672">&amp;</span>ireq, <span style="color:#66d9ef">sizeof</span>(<span style="color:#66d9ef">struct</span> in6_ifreq)))
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 85</span><span style="color:#f92672">+</span>		err <span style="color:#f92672">=</span> <span style="color:#f92672">-</span>EFAULT;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 86</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 87</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">return</span> err;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 88</span><span style="color:#f92672">+</span>}
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 89</span><span style="color:#f92672">+</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 90</span> <span style="color:#66d9ef">int</span> addrconf_del_ifaddr(<span style="color:#66d9ef">struct</span> net <span style="color:#f92672">*</span>net, <span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>arg)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 91</span> {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 92</span> 	<span style="color:#66d9ef">struct</span> in6_ifreq ireq;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 93</span>diff <span style="color:#f92672">--</span>git a<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>af_inet6.c b<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>af_inet6.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 94</span>index <span style="color:#ae81ff">14</span>ac1d9112.<span style="color:#ae81ff">.6</span>bb0da9fd5 <span style="color:#ae81ff">100644</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 95</span><span style="color:#f92672">---</span> a<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>af_inet6.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 96</span><span style="color:#f92672">+++</span> b<span style="color:#f92672">/</span>net<span style="color:#f92672">/</span>ipv6<span style="color:#f92672">/</span>af_inet6.c
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 97</span><span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">550</span>,<span style="color:#ae81ff">6</span> <span style="color:#f92672">+</span><span style="color:#ae81ff">550</span>,<span style="color:#ae81ff">8</span> <span style="color:#960050;background-color:#1e0010">@@</span> <span style="color:#66d9ef">int</span> inet6_ioctl(<span style="color:#66d9ef">struct</span> socket <span style="color:#f92672">*</span>sock, <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">int</span> cmd, <span style="color:#66d9ef">unsigned</span> <span style="color:#66d9ef">long</span> arg)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 98</span> 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 99</span> 	<span style="color:#66d9ef">case</span> SIOCSIFADDR:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">100</span> 		<span style="color:#66d9ef">return</span> addrconf_add_ifaddr(net, (<span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>) arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">101</span><span style="color:#f92672">+</span>	<span style="color:#66d9ef">case</span> SIOCGIFADDR:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">102</span><span style="color:#f92672">+</span>		<span style="color:#66d9ef">return</span> addrconf_get_ifaddr(net, (<span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>) arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">103</span> 	<span style="color:#66d9ef">case</span> SIOCDIFADDR:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">104</span> 		<span style="color:#66d9ef">return</span> addrconf_del_ifaddr(net, (<span style="color:#66d9ef">void</span> __user <span style="color:#f92672">*</span>) arg);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">105</span> 	<span style="color:#66d9ef">case</span> SIOCSIFDSTADDR:
+</code></pre></div><h2 id="demo-time">Demo time!</h2>
+<p>Now make a test interface named <code>br-demo</code> on bridge layer, then assign an IPv6 address to it. Of course, try to get each addresses assigned to the interface.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>root@OpenWrt:/# brctl addbr br-demo <span style="color:#f92672">&amp;&amp;</span> ifconfig br-demo up
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span>root@OpenWrt:/# ifconfig
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>br-demo   Link encap:Ethernet  HWaddr 06:FA:DC:0E:5F:84  
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>          inet6 addr: fe80::4fa:dcff:fe0e:5f84/64 Scope:Link
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>          TX packets:5 errors:0 dropped:0 overruns:0 carrier:0
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>          collisions:0 txqueuelen:1000 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>          RX bytes:0 <span style="color:#f92672">(</span>0.0 B<span style="color:#f92672">)</span>  TX bytes:454 <span style="color:#f92672">(</span>454.0 B<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>root@OpenWrt:/# demo_ipv6 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>usage: demo_ipv6 &lt;command&gt;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>- command
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>    add : &lt;ifname&gt; &lt;ipv6 address&gt;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>    get : &lt;ifname&gt; <span style="color:#f92672">[</span>index<span style="color:#f92672">]</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>root@OpenWrt:/# demo_ipv6 add br-demo 2001:0db8:85a3::8a82
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>root@OpenWrt:/# ifconfig br-demo
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>br-demo   Link encap:Ethernet  HWaddr 06:FA:DC:0E:5F:84  
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>          inet6 addr: fe80::6ce4:38ff:fe99:74d2/64 Scope:Link
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>          inet6 addr: 2001:db8:85a3::8a82/64 Scope:Global
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span>          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span>          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span>          TX packets:12 errors:0 dropped:0 overruns:0 carrier:0
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span>          collisions:0 txqueuelen:1000 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span>          RX bytes:0 <span style="color:#f92672">(</span>0.0 B<span style="color:#f92672">)</span>  TX bytes:1360 <span style="color:#f92672">(</span>1.3 KiB<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span>root@OpenWrt:/# demo_ipv6 get br-demo 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span>interface <span style="color:#f92672">(</span>br-demo<span style="color:#f92672">)</span> addr <span style="color:#f92672">(</span>2001:db8:85a3::8a82<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span>root@OpenWrt:/# demo_ipv6 get br-demo <span style="color:#ae81ff">1</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span>interface <span style="color:#f92672">(</span>br-demo<span style="color:#f92672">)</span> addr <span style="color:#f92672">(</span>fe80::6ce4:38ff:fe99:74d2<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span>root@OpenWrt:/# demo_ipv6 get br-demo <span style="color:#ae81ff">2</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span>root@OpenWrt:/# echo $?
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span><span style="color:#ae81ff">251</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span>root@OpenWrt:/# demo_ipv6 get br-demo <span style="color:#ae81ff">0</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37</span>interface <span style="color:#f92672">(</span>br-demo<span style="color:#f92672">)</span> addr <span style="color:#f92672">(</span>2001:db8:85a3::8a82<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="conclusion">Conclusion</h2>
+<p>This were a simple tutorial though, we could see that IOCTL programming is a way to communicate between kernel and user programs and give lots of opportunities for hacking the kernel.</p>
+<p>Stay Safe!</p>
+
+  </div>
+
+  <footer>
+    <hr class="end-line">
+
+    
+
+    
+
+    
+    
+  </footer>
+
+  <div class="comments">
+
+
+
+</div>
+
+</article>
+
+
+</body>
+<div class="foot">
+  
+  
+    &copy; 2019 - 2021 &#183; 
+    Copyright © 2020 Leesoo Ahn &#183;
+    <a href="#"><i class="fas fa-chevron-up"></i></a>
+  
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-F1MPWJM02E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-F1MPWJM02E');
+</script>
+</div>
+
+
+<script src="/me/js/lazyload.min.js"></script>
+<script>
+  var lazyImage = new LazyLoad({
+    container: document.getElementById('article')
+  });
+</script>
+
+
+</html>

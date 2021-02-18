@@ -65,9 +65,9 @@
       
 
       
-        3 min
+        4 min
       
-      55 s
+      10 s
       &nbsp;
     
 
@@ -96,99 +96,99 @@
 <li>wake up the target process</li>
 </ol>
 <p>We&rsquo;re going to hook at the last of the second stage. Because most exceptions, for example <em>dereferencing NULL pointers</em> are already considered at the boundary between the second and third.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">/* kernel/signal.c */</span>
-<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">__send_signal</span>(<span style="color:#66d9ef">int</span> sig,
-                         <span style="color:#66d9ef">struct</span> kernel_siginfo <span style="color:#f92672">*</span>info,
-                         <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span>t,
-                         <span style="color:#66d9ef">enum</span> pid_type type,
-                         <span style="color:#66d9ef">bool</span> force)
-{
-  <span style="color:#66d9ef">struct</span> sigpending <span style="color:#f92672">*</span>pending;
-  <span style="color:#66d9ef">struct</span> sigqueue <span style="color:#f92672">*</span>q;
-  <span style="color:#66d9ef">int</span> override_rlimit;
-  <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>, result;
-
-  <span style="color:#75715e">/* ... A LOT CODE HERE ... */</span>
-
-  complete_signal(sig, t, type);
-ret:
-  trace_signal_generate(sig, info, t, type <span style="color:#f92672">!=</span> PIDTYPE_PID, result);
-  <span style="color:#66d9ef">return</span> ret; 
-}
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span style="color:#75715e">/* kernel/signal.c */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">__send_signal</span>(<span style="color:#66d9ef">int</span> sig,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>                         <span style="color:#66d9ef">struct</span> kernel_siginfo <span style="color:#f92672">*</span>info,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>                         <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span>t,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>                         <span style="color:#66d9ef">enum</span> pid_type type,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>                         <span style="color:#66d9ef">bool</span> force)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>{
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>  <span style="color:#66d9ef">struct</span> sigpending <span style="color:#f92672">*</span>pending;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>  <span style="color:#66d9ef">struct</span> sigqueue <span style="color:#f92672">*</span>q;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>  <span style="color:#66d9ef">int</span> override_rlimit;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>  <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>, result;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>  <span style="color:#75715e">/* ... A LOT CODE HERE ... */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>  complete_signal(sig, t, type);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>ret:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>  trace_signal_generate(sig, info, t, type <span style="color:#f92672">!=</span> PIDTYPE_PID, result);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>  <span style="color:#66d9ef">return</span> ret; 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>}
 </code></pre></div><p>Here&rsquo;s one of functions signals walk and as the callee&rsquo;s name, <code>complete_signal</code> gives a clue, hook points are its ahead/behind. I pick <em>ahead</em>.</p>
 <p>Now code a few lines.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">/* kernel/signal.c */</span>
-<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">__send_signal</span>(<span style="color:#66d9ef">int</span> sig,
-                         <span style="color:#66d9ef">struct</span> kernel_siginfo <span style="color:#f92672">*</span>info,
-                         <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span>t,
-                         <span style="color:#66d9ef">enum</span> pid_type type,
-                         <span style="color:#66d9ef">bool</span> force)
-{ 
-  <span style="color:#66d9ef">struct</span> sigpending <span style="color:#f92672">*</span>pending;
-  <span style="color:#66d9ef">struct</span> sigqueue <span style="color:#f92672">*</span>q;
-  <span style="color:#66d9ef">int</span> override_rlimit;
-  <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>, result;
-
-  <span style="color:#75715e">/* ... A LOT CODE HERE ... */</span>
-
-  <span style="color:#75715e">/* Our code! */</span>
-  <span style="color:#66d9ef">if</span> (sig <span style="color:#f92672">!=</span> <span style="color:#ae81ff">17</span> <span style="color:#75715e">/* SIGCHLD in Arm */</span> <span style="color:#f92672">&amp;&amp;</span>
-      sig <span style="color:#f92672">!=</span> <span style="color:#ae81ff">14</span> <span style="color:#75715e">/* SIGALRM in Arm */</span> <span style="color:#f92672">&amp;&amp;</span>
-      info <span style="color:#f92672">&amp;&amp;</span> t)
-  {
-    <span style="color:#66d9ef">int</span> srcpid, dstpid;
-    <span style="color:#66d9ef">char</span> src[TASK_COMM_LEN] <span style="color:#f92672">=</span> { <span style="color:#ae81ff">0</span>, };
-    <span style="color:#66d9ef">char</span> dst[TASK_COMM_LEN] <span style="color:#f92672">=</span> { <span style="color:#ae81ff">0</span>, };
-    <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span> cur_task <span style="color:#f92672">=</span> NULL;
-
-    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>force) {
-      srcpid <span style="color:#f92672">=</span> info<span style="color:#f92672">-&gt;</span>si_pid;
-      cur_task <span style="color:#f92672">=</span> find_task_by_vpid(srcpid);
-    } <span style="color:#66d9ef">else</span>
-      srcpid <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; <span style="color:#75715e">/* just for kernel case */</span>
-
-    dstpid <span style="color:#f92672">=</span> t<span style="color:#f92672">-&gt;</span>pid;
-    memcpy(src, cur_task <span style="color:#f92672">?</span> cur_task<span style="color:#f92672">-&gt;</span>comm : <span style="color:#e6db74">&#34;kernel&#34;</span>, TASK_COMM_LEN<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
-    memcpy(dst, t<span style="color:#f92672">-&gt;</span>comm, TASK_COMM_LEN<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
-
-    printk(KERN_INFO <span style="color:#e6db74">&#34;Signal :: (%s %d) --[%d]--&gt; (%s %d)</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,
-        src, srcpid,
-        sig,
-        dst, dstpid);
-  }
-
-  complete_signal(sig, t, type);
-ret:
-  trace_signal_generate(sig, info, t, type <span style="color:#f92672">!=</span> PIDTYPE_PID, result);
-  <span style="color:#66d9ef">return</span> ret;
-}
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span><span style="color:#75715e">/* kernel/signal.c */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">int</span> <span style="color:#a6e22e">__send_signal</span>(<span style="color:#66d9ef">int</span> sig,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span>                         <span style="color:#66d9ef">struct</span> kernel_siginfo <span style="color:#f92672">*</span>info,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span>                         <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span>t,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span>                         <span style="color:#66d9ef">enum</span> pid_type type,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span>                         <span style="color:#66d9ef">bool</span> force)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span>{ 
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span>  <span style="color:#66d9ef">struct</span> sigpending <span style="color:#f92672">*</span>pending;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span>  <span style="color:#66d9ef">struct</span> sigqueue <span style="color:#f92672">*</span>q;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span>  <span style="color:#66d9ef">int</span> override_rlimit;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span>  <span style="color:#66d9ef">int</span> ret <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>, result;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span>  <span style="color:#75715e">/* ... A LOT CODE HERE ... */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span>  <span style="color:#75715e">/* Our code! */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span>  <span style="color:#66d9ef">if</span> (sig <span style="color:#f92672">!=</span> <span style="color:#ae81ff">17</span> <span style="color:#75715e">/* SIGCHLD in Arm */</span> <span style="color:#f92672">&amp;&amp;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span>      sig <span style="color:#f92672">!=</span> <span style="color:#ae81ff">14</span> <span style="color:#75715e">/* SIGALRM in Arm */</span> <span style="color:#f92672">&amp;&amp;</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span>      info <span style="color:#f92672">&amp;&amp;</span> t)
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span>  {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span>    <span style="color:#66d9ef">int</span> srcpid, dstpid;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span>    <span style="color:#66d9ef">char</span> src[TASK_COMM_LEN] <span style="color:#f92672">=</span> { <span style="color:#ae81ff">0</span>, };
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span>    <span style="color:#66d9ef">char</span> dst[TASK_COMM_LEN] <span style="color:#f92672">=</span> { <span style="color:#ae81ff">0</span>, };
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span>    <span style="color:#66d9ef">struct</span> task_struct <span style="color:#f92672">*</span> cur_task <span style="color:#f92672">=</span> NULL;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">25</span>    <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>force) {
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">26</span>      srcpid <span style="color:#f92672">=</span> info<span style="color:#f92672">-&gt;</span>si_pid;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">27</span>      cur_task <span style="color:#f92672">=</span> find_task_by_vpid(srcpid);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">28</span>    } <span style="color:#66d9ef">else</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">29</span>      srcpid <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; <span style="color:#75715e">/* just for kernel case */</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">30</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">31</span>    dstpid <span style="color:#f92672">=</span> t<span style="color:#f92672">-&gt;</span>pid;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">32</span>    memcpy(src, cur_task <span style="color:#f92672">?</span> cur_task<span style="color:#f92672">-&gt;</span>comm : <span style="color:#e6db74">&#34;kernel&#34;</span>, TASK_COMM_LEN<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">33</span>    memcpy(dst, t<span style="color:#f92672">-&gt;</span>comm, TASK_COMM_LEN<span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">34</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">35</span>    printk(KERN_INFO <span style="color:#e6db74">&#34;Signal :: (%s %d) --[%d]--&gt; (%s %d)</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">36</span>        src, srcpid,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">37</span>        sig,
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">38</span>        dst, dstpid);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">39</span>  }
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">40</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">41</span>  complete_signal(sig, t, type);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">42</span>ret:
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">43</span>  trace_signal_generate(sig, info, t, type <span style="color:#f92672">!=</span> PIDTYPE_PID, result);
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">44</span>  <span style="color:#66d9ef">return</span> ret;
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">45</span>}
 </code></pre></div><p>There are two type of sender, <code>SI_USER</code> and <code>SI_KERNEL</code>. <em>force</em> is set to <code>false</code> or <code>true</code> respectively. According to that, <code>cur_task</code> has sender&rsquo;s info or being NULL represents kernel so that we finally decide sender&rsquo;s name.</p>
 <p>We do ignore <code>SIGCHLD</code> and <code>SIGALRM</code> used for a signal notification to its parent that itself exited and time interval like a timer by kernel respectively to prevent dmesg flooding.</p>
 <h2 id="dmesg">dmesg</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">root@OpenWrt:/# reboot
-<span style="color:#f92672">[</span>   56.365579<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>reboot 1286<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.452796<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>hostapd 705<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.460590<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>wpa_supplicant 706<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.504500<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>killall 1350<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>dropbear 597<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.551519<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>odhcpd 822<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.599167<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>logd 430<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.701690<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>netifd 766<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>udhcpc 1044<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   56.728474<span style="color:#f92672">]</span> br-wan: port 1<span style="color:#f92672">(</span>eth0<span style="color:#f92672">)</span> entered disabled state
-<span style="color:#f92672">[</span>   56.738012<span style="color:#f92672">]</span> device eth0 left promiscuous mode
-<span style="color:#f92672">[</span>   56.743576<span style="color:#f92672">]</span> br-wan: port 1<span style="color:#f92672">(</span>eth0<span style="color:#f92672">)</span> entered disabled state
-<span style="color:#f92672">[</span>   56.769219<span style="color:#f92672">]</span> smsc95xx 1-1.1:1.0 eth0: hardware isn<span style="color:#960050;background-color:#1e0010">&#39;</span>t capable of remote wakeup
-<span style="color:#f92672">[</span>   57.730085<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ubusd 141<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.737611<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>askfirst 143<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.745295<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>urngd 177<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.752705<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>brcmf_wdog/mmc1 293<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.760934<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>dnsmasq 534<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.768427<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>netifd 766<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.775770<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.782966<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>sh 1476<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.790105<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   57.790712<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>kernel 0<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>askfirst 143<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   58.791265<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>9<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ash 142<span style="color:#f92672">)</span>
-<span style="color:#f92672">[</span>   58.799449<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>kernel 0<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ash 142<span style="color:#f92672">)</span>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span>root@OpenWrt:/# reboot
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span style="color:#f92672">[</span>   56.365579<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>reboot 1286<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span style="color:#f92672">[</span>   56.452796<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>hostapd 705<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span style="color:#f92672">[</span>   56.460590<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>wpa_supplicant 706<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span style="color:#f92672">[</span>   56.504500<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>killall 1350<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>dropbear 597<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span style="color:#f92672">[</span>   56.551519<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>odhcpd 822<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span style="color:#f92672">[</span>   56.599167<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>logd 430<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span style="color:#f92672">[</span>   56.701690<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>netifd 766<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>udhcpc 1044<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span style="color:#f92672">[</span>   56.728474<span style="color:#f92672">]</span> br-wan: port 1<span style="color:#f92672">(</span>eth0<span style="color:#f92672">)</span> entered disabled state
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span style="color:#f92672">[</span>   56.738012<span style="color:#f92672">]</span> device eth0 left promiscuous mode
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span style="color:#f92672">[</span>   56.743576<span style="color:#f92672">]</span> br-wan: port 1<span style="color:#f92672">(</span>eth0<span style="color:#f92672">)</span> entered disabled state
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span style="color:#f92672">[</span>   56.769219<span style="color:#f92672">]</span> smsc95xx 1-1.1:1.0 eth0: hardware isn<span style="color:#960050;background-color:#1e0010">&#39;</span>t capable of remote wakeup
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span style="color:#f92672">[</span>   57.730085<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ubusd 141<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span style="color:#f92672">[</span>   57.737611<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>askfirst 143<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span style="color:#f92672">[</span>   57.745295<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>urngd 177<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span style="color:#f92672">[</span>   57.752705<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>brcmf_wdog/mmc1 293<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">17</span><span style="color:#f92672">[</span>   57.760934<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>dnsmasq 534<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">18</span><span style="color:#f92672">[</span>   57.768427<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>netifd 766<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">19</span><span style="color:#f92672">[</span>   57.775770<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">20</span><span style="color:#f92672">[</span>   57.782966<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>sh 1476<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">21</span><span style="color:#f92672">[</span>   57.790105<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>15<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ntpd 1070<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">22</span><span style="color:#f92672">[</span>   57.790712<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>kernel 0<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>askfirst 143<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">23</span><span style="color:#f92672">[</span>   58.791265<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>procd 1<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>9<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ash 142<span style="color:#f92672">)</span>
+<span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">24</span><span style="color:#f92672">[</span>   58.799449<span style="color:#f92672">]</span> Signal :: <span style="color:#f92672">(</span>kernel 0<span style="color:#f92672">)</span> --<span style="color:#f92672">[</span>1<span style="color:#f92672">]</span>--&gt; <span style="color:#f92672">(</span>ash 142<span style="color:#f92672">)</span>
 </code></pre></div><h2 id="ftrace-and-strace">ftrace and strace</h2>
 <p><code>ftrace</code> is really cool. I love and often use it. But it has a steep learning curve as much as its flexibility than most tracers. Not only that reason, but also roughly able to trace them at the early stage of boot or halt.<br>
 <code>strace</code> traces only one program at a time. That means you must execute it as many as you&rsquo;d like to trace. <strong>NOT</strong> the whole system.</p>

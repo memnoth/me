@@ -7,10 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2020 Leesoo Ahn</copyright>
-    <lastBuildDate>Thu, 31 Dec 2020 07:07:07 +0900</lastBuildDate>
+    <lastBuildDate>Thu, 04 Feb 2021 21:26:31 +0900</lastBuildDate>
     
 	<atom:link href="https://www.ooseel.net/me/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Design SIOCGIFADDR on IPv6 socket</title>
+      <link>https://www.ooseel.net/me/2021/02/design-siocgifaddr-on-ipv6-socket/</link>
+      <pubDate>Thu, 04 Feb 2021 21:26:31 +0900</pubDate>
+      
+      <guid>https://www.ooseel.net/me/2021/02/design-siocgifaddr-on-ipv6-socket/</guid>
+      <description>As some of you already know SIOCGIFADDR isn&amp;rsquo;t supported on IPv6 socket although SIOCSIFADDR is. For sure there is a reason linux kernel doesn&amp;rsquo;t do so but it&amp;rsquo;s worth to build up by our hands, then we get to know much more in detail. This is good for us as a studying purpose rather than use in product.
+We define simple ideas with some requirements, then look at kernel patch and a demo.</description>
+    </item>
     
     <item>
       <title>2020년을 되돌아 보는 글</title>
