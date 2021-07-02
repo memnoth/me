@@ -7,10 +7,19 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>en</language>
     <copyright>Copyright © 2020 Leesoo Ahn</copyright>
-    <lastBuildDate>Thu, 04 Feb 2021 21:26:31 +0900</lastBuildDate>
+    <lastBuildDate>Wed, 30 Jun 2021 01:00:00 +0900</lastBuildDate>
     
 	<atom:link href="https://www.ooseel.net/me/posts/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title># 월간 인사이트 - 2021년 6월호</title>
+      <link>https://www.ooseel.net/me/2021/06/hashtag-montly-insight-2021-06/</link>
+      <pubDate>Wed, 30 Jun 2021 01:00:00 +0900</pubDate>
+      
+      <guid>https://www.ooseel.net/me/2021/06/hashtag-montly-insight-2021-06/</guid>
+      <description>General  &amp;lsquo;월간 인사이트&amp;rsquo; 시작  안도형님이 작성하신 This month I Learnd을 보고 시작했다. 포스트하는건 귀찮지만 인사이트를 얻은 글에 대해 월 단위로 정리하여 공유하기에 좋은 방법이라 생각한다. 기억속에 고이 잠든 인사이트 넘치는 글들이 너무나 많다!   평범한 일상이 소중한 이유  퇴근 후 맥주 한 잔, 저녁 노을을 보며 뛸 수 있는 여유. 30대에 들어서며 20대에 가졌던 생각이 많이 바뀌었다. 20대에는 지금의 나는 내 인생에서 두번 다시 오지 않아!라며 악착같이 열심히 경험쌓으며 살았다.</description>
+    </item>
     
     <item>
       <title>Design SIOCGIFADDR on IPv6 socket</title>
