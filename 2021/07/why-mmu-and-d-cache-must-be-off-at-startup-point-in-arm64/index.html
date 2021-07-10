@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="Hugo 0.69.0" />
+
+  <title> Why MMU and D-Cache must be off at Startup point in ARM64 |  more or less insightful</title>
+  <meta name="description" content="more or less insightful">
+  <link rel="stylesheet" href="https://www.ooseel.net/me/css/simpleness.css">
+  <link rel="canonical" href="https://www.ooseel.net/me/2021/07/why-mmu-and-d-cache-must-be-off-at-startup-point-in-arm64/">
+  <link rel="alternate" type="application/rss+xml" href="" title="more or less insightful">
+  
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+  <header class="menus">
+  
+
+  <nav >
+    
+    <a href="/me/"> more or less insightful</a>
+    
+  </nav>
+
+  <nav class="fontawesome">
+    
+    <a href="https://github.com/memnoth" target="_blank">
+        <i title="GitHub" class="fab fa-github"></i>
+    </a>
+    
+    
+    <a href="https://www.ooseel.net/me/index.xml" target="_blank">
+        <i title="RSS" class="fas fa-rss"></i>
+    </a>
+    
+  </nav>
+  
+  
+  <div class="hidden description">more or less insightful</div>
+  
+</header>
+
+<article class="article">
+  <header>
+    <h1 style="text-align: center;" >Why MMU and D-Cache must be off at Startup point in ARM64</h1>
+
+    <div class="post-meta">
+    
+      <time datetime="2021-07-10T22:31:36&#43;09:00">July 10, 2021</time> &nbsp; 
+    
+
+     &nbsp;
+
+    
+    
+    
+
+    
+      <i class="far fa-clock"></i>
+      
+      
+      
+
+      
+        2 min
+      
+      29 s
+      &nbsp;
+    
+
+    
+    </div>
+  </header>
+
+   
+
+  <div class="text">
+    <h4 id="q-아래와-같이-startup-point에서-mmu-와-d-cache의-상태가-off-여야-하는데-이유가-뭔가요">Q. 아래와 같이 startup point에서 <code>MMU</code> 와 <code>D-Cache</code>의 상태가 off 여야 하는데 이유가 뭔가요?</h4>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 1</span> <span style="color:#75715e">// &#39;head.S&#39; of linux kernel 5.10
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 2</span><span style="color:#75715e"></span> <span style="color:#75715e">/*
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 3</span><span style="color:#75715e">  * Kernel startup entry point.
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 4</span><span style="color:#75715e">  * ---------------------------
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 5</span><span style="color:#75715e">  *  
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 6</span><span style="color:#75715e">  * The requirements are:
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 7</span><span style="color:#75715e">  *   MMU = off, D-cache = off, I-cache = on or off,
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 8</span><span style="color:#75715e">  *   x0 = physical address to the FDT blob.
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f"> 9</span><span style="color:#75715e">  *
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">10</span><span style="color:#75715e">  * This code is mostly position independent so you call this at
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">11</span><span style="color:#75715e">  * __pa(PAGE_OFFSET).
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">12</span><span style="color:#75715e">  *  
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">13</span><span style="color:#75715e">  * Note that the callee-saved registers are used for storing variables
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">14</span><span style="color:#75715e">  * that are useful before the MMU is enabled. The allocations are described
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">15</span><span style="color:#75715e">  * in the entry routines.
+</span><span style="margin-right:0.4em;padding:0 0.4em 0 0.4em;color:#7f7f7f">16</span><span style="color:#75715e">  */</span>
+</code></pre></div><h4 id="a-1-mmu">A-1. MMU</h4>
+<p><code>MMU</code>는 CPU가 명령어를 수행할 때 메모리에 접근할 vaddr(Virtual Address)를 paddr(Physical Address)로 변환하는 작업을 수행합니다. 그리고 이때 사용되는 자료구조가 주소 매핑 테이블인데 이는 커널이 생성합니다. Startup 코드가 수행되는 시점에서는 매핑 테이블이 존재하지 않는데 <code>MMU</code>가 on 되어 있다면 메모리 주소가 vaddr로 해석됩니다. 결국 <code>MMU</code>가 수행되고 이는 paddr로 변환되어 의도치 않은 동작이 수행됩니다. 이와 같은 이유로 매핑 테이블이 생성되기 이전에는 <code>MMU</code>를 off 해야합니다.</p>
+<h4 id="a-2-d-cache">A-2. D-Cache</h4>
+<p><code>D-Cache</code>는 CPU와 메인 메모리 사이에서 데이터를 빠르게 접근하기 위한 저장소 역할을 수행합니다. 대부분의 시스템 프로그래머들은 알다시피 종종 캐시와 메모리간 데이터 싱크(Sync) 문제들을 마주하게 되는데 startup 시점에서는 paddr에서 데이터를 직접 읽거나 써야 합니다. 그러나 <code>D-Cache</code>가 on 되어 있다면 paddr에서 데이터를 읽는 대신 캐시 메모리에서 읽으므로 의도치 않은 동작을 수행하게 됩니다. 이와 같은 이유로 <code>D-Cache</code>도 off 해야합니다.</p>
+
+  </div>
+
+  <footer>
+    <hr class="end-line">
+
+    
+
+    
+    <div class="post-tags">
+      <i class="fas fa-tags"></i>
+      
+        <a href="/me/tags/linux">linux</a>
+        &nbsp;
+      
+        <a href="/me/tags/kernel">kernel</a>
+        &nbsp;
+      
+    </div>
+    
+
+    
+    
+  </footer>
+
+  <div class="comments">
+
+
+
+</div>
+
+</article>
+
+
+</body>
+<div class="foot">
+  
+  
+    &copy; 2019 - 2021 &#183; 
+    Copyright © 2020 Leesoo Ahn &#183;
+    <a href="#"><i class="fas fa-chevron-up"></i></a>
+  
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-F1MPWJM02E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-F1MPWJM02E');
+</script>
+</div>
+
+
+<script src="/me/js/lazyload.min.js"></script>
+<script>
+  var lazyImage = new LazyLoad({
+    container: document.getElementById('article')
+  });
+</script>
+
+
+</html>
